@@ -16,7 +16,7 @@ export const maxDuration = 60;
  * Werking:
  * 1. Voor elke leverancier: probeer scrape; bij falen → fallback naar vorige maand-snapshot
  * 2. Combineer met laatste snapshot voor DNB-tarifs en heffingen (die wijzigen jaarlijks)
- * 3. Schrijf naar Vercel KV onder key tariefkaart:{YYYY-MM}
+ * 3. Commit nieuwe maand-JSON naar GitHub repo (triggert auto-deploy)
  */
 async function handle(req: Request) {
   const auth = req.headers.get('authorization') ?? '';
@@ -77,7 +77,7 @@ async function handle(req: Request) {
     ),
     fallback: failedIds,
     snapshot: { maand: snapshot.maand, supplierCount: snapshot.suppliers.length },
-    persistent: ok ? 'Vercel KV' : 'in-memory only (KV niet geconfigureerd)',
+    persistent: ok ? 'GitHub commit (triggert nieuwe deploy)' : 'NIET OPGESLAGEN (GITHUB_TOKEN ontbreekt of API faalde)',
   });
 }
 
