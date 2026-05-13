@@ -21,27 +21,25 @@ npm run dev   # http://localhost:3000
 
 ## Deploy naar Vercel
 
+Het Vercel-project is gekoppeld aan deze GitHub repo. Elke `git push` naar
+`main` triggert automatisch een production deploy. Geen CLI nodig.
+
 ```bash
-vercel link
-vercel --prod
+git add .
+git commit -m "..."
+git push          # Vercel deployt automatisch
 ```
 
 ## Environment variables (Vercel project settings)
 
-| Variabele                | Doel                                                   | Verplicht |
-|--------------------------|--------------------------------------------------------|-----------|
-| `CRON_SECRET`            | Authenticatie voor `/api/scrape` endpoint              | Ja        |
-| `KV_REST_API_URL`        | Vercel KV (Redis) endpoint                             | Ja*       |
-| `KV_REST_API_TOKEN`      | Vercel KV authenticatie                                | Ja*       |
+| Variabele      | Doel                                                                  | Verplicht |
+|----------------|-----------------------------------------------------------------------|-----------|
+| `CRON_SECRET`  | Bearer auth voor `/api/scrape` (admin + Vercel cron)                  | Ja        |
+| `GITHUB_TOKEN` | Fine-grained PAT (Contents: r/w op deze repo) — gebruikt door scrape  | Ja        |
 
-\* Zonder KV werkt de app, maar de cron-updates zijn niet persistent — alleen de
-JSON-bestanden in `/data/tariefkaarten/` worden gebruikt.
-
-## Vercel KV setup
-
-1. In Vercel project → Storage → Create Database → KV (Redis)
-2. Connect met dit project
-3. Environment variables worden automatisch toegevoegd
+`GITHUB_TOKEN` moet een Personal Access Token zijn met Contents: read/write op
+deze repo. Wordt door `/api/scrape` gebruikt om elke maand een nieuwe
+`data/tariefkaarten/YYYY-MM.json` te committen via de GitHub Contents API.
 
 ## Data structuur
 
@@ -58,8 +56,9 @@ Elke snapshot bevat:
 - `schattingen{}` — jaargemiddelde EPEX voor jaarsimulatie
 - `changelog[]` — wijzigingen t.o.v. vorige maand (auto-gegenereerd door scrape)
 
-Runtime updates van de cron worden in **Vercel KV** geschreven onder key
-`tariefkaart:{YYYY-MM}` — die overschrijven de basis-JSON-files.
+Runtime updates door de cron worden gecommit naar deze GitHub repo onder
+`data/tariefkaarten/{YYYY-MM}.json`. De commit triggert automatisch een
+nieuwe Vercel deployment waarin het nieuwe bestand mee gebundeld wordt.
 
 ## Scrapers toevoegen
 
