@@ -3,33 +3,14 @@ import path from 'node:path';
 import type { MaandSnapshot } from './types';
 
 const DATA_DIR = path.join(process.cwd(), 'data', 'tariefkaarten');
-const KV_PREFIX = 'tariefkaart:';
 
-let kvClient: any = null;
-async function getKv(): Promise<any | null> {
-  if (kvClient) return kvClient;
-  if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) return null;
-  try {
-    const mod = await import('@vercel/kv');
-    kvClient = mod.kv;
-    return kvClient;
-  } catch {
-    return null;
-  }
-}
-
+/**
+ * Lijst alle beschikbare maanden op basis van de JSON files in
+ * data/tariefkaarten/. De data komt mee in de Vercel deployment bundle,
+ * dus reads zijn pure filesystem reads (geen netwerk).
+ */
 export async function listMaanden(): Promise<string[]> {
   const set = new Set<string>();
-  const kv = await getKv();
-  if (kv) {
-    try {
-      const keys = await kv.keys(`${KV_PREFIX}*`);
-      for (const k of keys as string[]) {
-        const m = k.replace(KV_PREFIX, '');
-        if (/^\d{4}-\d{2}$/.test(m)) set.add(m);
-      }
-    } catch (e) { console.error('KV list error:', e); }
-  }
   try {
     const files = await fs.readdir(DATA_DIR);
     for (const f of files) {
@@ -41,13 +22,6 @@ export async function listMaanden(): Promise<string[]> {
 
 export async function loadMaand(maand: string): Promise<MaandSnapshot | null> {
   if (!/^\d{4}-\d{2}$/.test(maand)) return null;
-  const kv = await getKv();
-  if (kv) {
-    try {
-      const fromKv = (await kv.get(`${KV_PREFIX}${maand}`)) as MaandSnapshot | null;
-      if (fromKv) return fromKv;
-    } catch (e) { console.error('KV get error:', e); }
-  }
   try {
     const txt = await fs.readFile(path.join(DATA_DIR, `${maand}.json`), 'utf-8');
     return JSON.parse(txt) as MaandSnapshot;
@@ -56,17 +30,23 @@ export async function loadMaand(maand: string): Promise<MaandSnapshot | null> {
   }
 }
 
+export async function loadMaanden(maanden: string[]): Promise<MaandSnapshot[]> {
+  const results = await Promise.all(maanden.map(m => loadMaand(m)));
+  return results.filter((x): x is MaandSnapshot => x !== null);
+}
+
 /**
- * Commit een MaandSnapshot als JSON file naar de GitHub repo onder
- * data/tariefkaarten/{maand}.json. Vercel detecteert de commit en triggert
- * automatisch een nieuwe deployment waarin de nieuwe file mee wordt gebundeld.
+ * Persist een MaandSnapshot door 'm te committen als JSON file naar de
+ * GitHub repo onder data/tariefkaarten/{maand}.json. Vercel detecteert
+ * de commit en triggert automatisch een nieuwe deployment waarin de
+ * nieuwe file mee wordt gebundeld.
  *
  * Vereist env vars:
  *   GITHUB_TOKEN        - Fine-grained PAT met Contents: read/write op de repo
  *   GITHUB_REPO         - optioneel, default 'boonecedric-blip/tariefkaarten-vergelijker'
  *   GITHUB_BRANCH       - optioneel, default 'main'
  */
-async function commitToGithub(snapshot: MaandSnapshot): Promise<boolean> {
+export async function saveMaand(snapshot: MaandSnapshot): Promise<boolean> {
   const token = process.env.GITHUB_TOKEN;
   if (!token) {
     console.warn('GITHUB_TOKEN niet geconfigureerd; tariefkaart niet persistent opgeslagen.');
@@ -92,7 +72,7 @@ async function commitToGithub(snapshot: MaandSnapshot): Promise<boolean> {
       const data = await getRes.json() as { sha?: string };
       sha = data.sha;
     }
-  } catch { /* file bestaat niet; sha blijft undefined */ }
+  } catch { /* file bestaat nog niet; sha blijft undefined */ }
 
   const putRes = await fetch(apiUrl, {
     method: 'PUT',
@@ -111,13 +91,4 @@ async function commitToGithub(snapshot: MaandSnapshot): Promise<boolean> {
     return false;
   }
   return true;
-}
-
-export async function saveMaand(snapshot: MaandSnapshot): Promise<boolean> {
-  return commitToGithub(snapshot);
-}
-
-export async function loadMaanden(maanden: string[]): Promise<MaandSnapshot[]> {
-  const results = await Promise.all(maanden.map(m => loadMaand(m)));
-  return results.filter((x): x is MaandSnapshot => x !== null);
 }
