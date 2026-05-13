@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;700&family=Karla:wght@300;400;500;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --hv-dark: #2D3D3C;    /* Outer Space Green */
+  --hv-green: #32985A;   /* Sea Green */
+  --hv-yellow: #DDDC34;  /* Pear Green */
+  --hv-blue: #13263B;    /* Yankees Blue */
+  --hv-cream: #F7F6F1;
+  --hv-line: #E6E4DA;
+  --hv-mute: #5b6877;
+}
+
+html, body { background: var(--hv-cream); color: var(--hv-blue); }
+body {
+  font-family: 'Karla', -apple-system, system-ui, sans-serif;
+  font-feature-settings: "tnum" on, "lnum" on;
+}
+
+.font-display { font-family: 'Jost', 'Karla', sans-serif; letter-spacing: -0.01em; }
+
+@layer components {
+  .card {
+    @apply bg-white rounded-xl border border-hv-line shadow-sm p-5 sm:p-6;
+  }
+  .input {
+    @apply w-full px-3 py-2 border border-slate-300 rounded-md text-sm
+           focus:outline-none focus:ring-2 focus:ring-hv-green focus:border-transparent;
+  }
+  .input-dark {
+    @apply w-full px-3 py-2.5 rounded-md text-sm font-medium text-white
+           bg-white/10 border border-white/15
+           focus:outline-none focus:ring-2 focus:ring-hv-yellow focus:border-transparent
+           disabled:opacity-50;
+  }
+  .label {
+    @apply block text-[11px] font-bold text-hv-dark/70 mb-1.5 uppercase tracking-wider font-display;
+  }
+  .label-dark {
+    @apply block text-[11px] font-bold text-white/55 mb-1.5 uppercase tracking-wider font-display;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center px-3 py-1.5 rounded-md text-sm font-medium
+           border border-slate-300 bg-white hover:bg-slate-50 transition;
+  }
+  .btn-primary {
+    @apply bg-hv-green text-white border-hv-green hover:bg-hv-green-dk;
+  }
+  .btn-cta {
+    @apply bg-hv-yellow text-hv-blue border-hv-yellow hover:brightness-95 font-bold font-display;
+  }
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide;
+  }
+  .badge-q { background: rgba(50,152,90,0.14); color: #1f6c3d; }
+  .badge-h { background: rgba(221,220,52,0.30); color: #6c6a14; }
+  .badge-cashback { background: rgba(221,220,52,0.30); color: #13263B; }
+  .badge-warn { background: rgba(178,58,72,0.14); color: #8a2b36; }
+  .badge-best { background: rgba(50,152,90,0.18); color: #1f6c3d; }
+  .badge-worst { background: rgba(217,83,79,0.15); color: #9c3530; }
+  .step-pill {
+    @apply inline-flex items-center gap-2 font-display uppercase tracking-[0.16em] text-[11px] font-bold text-hv-mute;
+  }
+  .step-pill .n {
+    @apply w-[22px] h-[22px] rounded-full bg-hv-green text-white inline-flex items-center justify-center text-[11px] font-bold tracking-normal;
+  }
+}
+
+.num-pop { transition: color .15s ease, background .15s ease; }
+.tabular { font-variant-numeric: tabular-nums lining-nums; }
